@@ -1,11 +1,11 @@
 # Attempt 1: 从亚马逊搜索列表中抓取商品名称，价格，url，并存入csv
-import lxml
 from lxml import etree
 import requests
 import csv
 import random
 import time
-from itertools import cycle
+
+# from itertools import cycle
 
 # Not Used
 # def get_proxies():
@@ -53,7 +53,12 @@ from itertools import cycle
 # Not used
 # proxy_pool = cycle(get_proxies())
 
+# 以上全部为对于亚马逊反机器人指令的对应，因并未被过多侦测故未实际采用
+
+# 数据来源：亚马逊美国版
 BASE_URL = "https://www.amazon.com/s?k="
+
+# 浏览器头部数据：根据真实浏览器模仿得来
 HEADER = {
     "User-Agent": 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.157 Safari/537.36',
     "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9",
@@ -62,7 +67,7 @@ HEADER = {
     "cache-control": "max-age=0",
 }
 
-
+# 给定一个物品名称（String）与搜索页面数（int），返回一个text格式的html回复
 def get_search_page(item_name, pg):
     target = BASE_URL + item_name + "&page=" + str(pg)
     print(target)
@@ -81,21 +86,29 @@ def get_search_page(item_name, pg):
             elif response.status_code == 200:
                 # print(response.text)
                 html = etree.HTML(response.text)
+                items_with_all_data = './/div[@class="sg-col-inner"]/div[2]//span[@class="a-price-whole"]/../../../../../../../../../../div[@class="sg-row"][1]//span[@aria-label][1]/../../../../../../../../..'
                 item_titles = html.xpath(
-                    ".//div[@class='a-section a-spacing-none']//a[@class='a-link-normal a-text-normal']/span")
+                    items_with_all_data + '//span[@class="a-size-medium a-color-base a-text-normal"]/node()')
+                no_result = html.xpath(
+                    '//span[contains(string(),"No results")]'
+                )
                 if (len(item_titles) == 0):
                     # Request is blocked by bot detection
                     print('Request is blocked by bot detection')
                     continue
-                print("HTML is normal, proceeding to next stage")
-                return response.text
+                elif len(no_result) > 0:
+                    print("Invalid search page, returning")
+                    return None
+                else:
+                    print("HTML is normal, proceeding to next stage")
+                    return response.text
             return None
         except:
             print("Exception,skipping")
             continue
     return None
 
-
+# 给定一个string格式的html，通过Xpath提取搜索中需要的特征
 def parse_and_select(res):
     html = etree.HTML(res)
     items_with_all_data = './/div[@class="sg-col-inner"]/div[2]//span[@class="a-price-whole"]/../../../../../../../../../../div[@class="sg-row"][1]//span[@aria-label][1]/../../../../../../../../..'
@@ -106,24 +119,27 @@ def parse_and_select(res):
     item_url = html.xpath(
         items_with_all_data + "//a[@class='a-link-normal a-text-normal']/@href")
     item_review = html.xpath(
-        items_with_all_data + '//div[@class="sg-row"][1]//span[@aria-label][1]/@aria-label'
+        items_with_all_data + '//div[@class="sg-row"][1]//span[@aria-label!="Amazon\'s Choice"][1]/@aria-label'
     )
     item_review_count = html.xpath(
         items_with_all_data + '//div[@class="sg-row"][1]//span[@aria-label][2]/@aria-label'
     )
-    print(len(item_titles))
-    print(len(item_prices))
-    print(len(item_url))
-    print(len(item_review))
-    print(len(item_review_count))
+    # print(len(item_titles))
+    # print(len(item_prices))
+    # print(len(item_url))
+    # print(len(item_review))
+    # print(len(item_review_count))
     url_processed = []
     for i in item_url:
-        url_processed.append("www.amazon.com" + i)
+        url_processed.append("https://www.amazon.com" + i)
 
     review_processed = []
     for i in item_review:
-        number = i[0:3]
-        review_processed.append(float(number))
+        try:
+            number = i[0:3]
+            review_processed.append(float(number))
+        except ValueError:
+            continue
 
     review_count_processed = []
     for i in item_review_count:
@@ -136,7 +152,8 @@ def parse_and_select(res):
     return data
 
 
-# Phase two: loop through item pages for specific information.
+# Attempt two: loop through item pages for specific information.
+# 给定一个特定商品的url，返回一个text格式的服务器返回html
 def get_item_page(url):
     for i in range(100):
         try:
@@ -167,6 +184,7 @@ def get_item_page(url):
             continue
     return None
 
+# 与上一函数相似，通过Xpath选择商品页面上的重要信息。
 def parse_and_select_item(res):
     html = etree.HTML(res)
     item_seller = html.xpath(
@@ -179,33 +197,61 @@ def parse_and_select_item(res):
         '//div[@id = "centerCol"]//div[@id="featurebullets_feature_div"]//ul/li[position()>1]/span/node()'
     )
     # Should be non-zero for prime supported shipping
-    item_prime = html.xpath(
-        '//span[@id="priceBadging_feature_div"]'
+    item_shipping = html.xpath(
+        '//span[@id = "price-shipping-message"]/b/text()'
+    )
+    item_return = html.xpath(
+        '//div[@id="buybox"]//span[@id = "creturns-return-policy-content"]//a/text()'
     )
     item_stock_level = html.xpath(
         '//div[@id="availability"]/span/node()'
     )
-    item_dimension = html.xpath(
-        '//table[@id="productDetails_detailBullets_sections1"]/tbody/tr/th[contains(string(),"Dimension")]/../td/text()'
-    )
-    item_weight = html.xpath(
-        '//table[@id="productDetails_detailBullets_sections1"]/tbody/tr/th[contains(string(),"Item Weight")]/../td/text()'
-    )
-    item_asin= html.xpath(
-        '//table[@id="productDetails_detailBullets_sections1"]/tbody/tr/th[contains(string(),"ASIN")]/../td/text()'
-    )
-    item_ranking = html.xpath(
-        '//table[@id="productDetails_detailBullets_sections1"]/tbody/tr/th[contains(string(),"Best Sellers Rank")]/../td/span/span//text()'
-    )
-    item_first_available = html.xpath(
-        '//table[@id="productDetails_detailBullets_sections1"]/tbody/tr/th[contains(string(),"Date First Available")]/../td/text()'
-    )
-    data = []
+    # print(item_specs)
+    # print(item_description)
+    # print(item_shipping)
+    # print(item_return)
+    # print(item_stock_level)
+    NA = "N/A"
+    if len(item_seller) == 0:
+        item_seller = NA
+    else:
+        item_seller = item_seller[0]
+
+    if len(item_specs) == 0:
+        item_specs = NA
+    else:
+        item_specs_c = []
+        for i in item_specs:
+            item_specs_c.append(i[16:])
+        item_specs = " / ".join(item_specs_c)
+
+    if len(item_description) == 0:
+        item_description = NA
+    else:
+        item_description_c = []
+        for i in item_description:
+            item_description_c.append(i.replace("\n", ""))
+        item_description = " \n ".join(item_description_c)
+    if len(item_shipping) == 0:
+        item_shipping = NA
+    else:
+        item_shipping = item_shipping[0]
+    if len(item_return) == 0:
+        item_return = NA
+    else:
+        item_return = item_return[0].replace("\n", "")
+    if len(item_stock_level) == 0:
+        item_stock_level = NA
+    else:
+        item_stock_level = item_stock_level[0].replace("\n", "")
+    data = [item_seller, item_specs, item_description, item_shipping, item_return, item_stock_level]
+    # print(data)
     return data
 
 
 def to_csv(data, name):
-    headers = ["Name", "Price", "Link", "Customer Review", "Review Count"]
+    headers = ["Name", "Price", "Link", "Customer Review", "Review Count", "Seller", "Specs List(If Applicable)",
+               "Item Description", "Shipping Option", "Returning Option", "Item Stock Level"]
     csv_file = open("./data/ListSearch_" + name + ".csv", "w")
     writer = csv.writer(csv_file)
     writer.writerow(headers)
@@ -218,10 +264,46 @@ def to_csv(data, name):
 def main(name, page):
     html = get_search_page(name, page)
     data = parse_and_select(html)
-    # print(data)
-    to_csv(data, name)
-    print("finished!")
+    # Start individual Search
+    data_s = []
+    # j = 0
+    for i in data:
+        #if j > 1:
+        #    break
+        #j += 1
+        url = i[2]
+        print(url)
+        html_i = get_item_page(url)
+        data_i = parse_and_select_item(html_i)
+        data_s.append(i + data_i)
+
+    # print(data_s[0])
+    return data_s
+    print("finished one page")
 
 
 if __name__ == "__main__":
-    main("gaming_laptop", 1)
+    name = input("Please Input the Item You Want To Search")
+    name = name.replace(" ", "+")
+    page = input("Please indecate how many pages of data is needed")
+    try:
+        page_c = int(page)
+        if (page_c >= 20):
+            print("TooLarge page number input")
+    except:
+        print("invalid page number input")
+        raise KeyboardInterrupt
+    print("Your search subject is " + name)
+    print("You want to search for " + page + " times")
+    input("Press enter to start the search")
+    print("Search started")
+    i = 1
+    data = []
+    while (page_c > 0):
+        print("Working on " + str(i) + "'s search, " + str(page) + " search left.")
+        data_si = main(name, i)
+        data = data + data_si
+        page_c -= 1
+        i += 1
+    to_csv(data, name)
+    print("All search finished and stored")

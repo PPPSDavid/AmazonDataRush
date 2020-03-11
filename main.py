@@ -206,6 +206,15 @@ def parse_and_select_item(res):
     item_stock_level = html.xpath(
         '//div[@id="availability"]/span/node()'
     )
+    item_protection_plan = html.xpath(
+        '//span[contains(string(),"Add a Protection Plan")]'
+    )
+    item_protection_plan_price4 = html.xpath(
+        '//span/a[contains(string(),"4-Year")]/../span/text()'
+    )
+    item_protection_plan_price2 =  html.xpath(
+        '//span/a[contains(string(),"2-Year")]/../span/text()'
+    )
     # print(item_specs)
     # print(item_description)
     # print(item_shipping)
@@ -244,14 +253,26 @@ def parse_and_select_item(res):
         item_stock_level = NA
     else:
         item_stock_level = item_stock_level[0].replace("\n", "")
-    data = [item_seller, item_specs, item_description, item_shipping, item_return, item_stock_level]
+    if len(item_protection_plan)>0:
+        item_protection_plan = True
+    else:
+        item_protection_plan = False
+    if len(item_protection_plan_price2)==0:
+        item_protection_plan_price2= NA
+    else:
+        item_protection_plan_price2= item_protection_plan_price2[0]
+    if len(item_protection_plan_price4)==0:
+        item_protection_plan_price4= NA
+    else:
+        item_protection_plan_price4= item_protection_plan_price4[0]
+    data = [item_seller, item_specs, item_description, item_shipping, item_return, item_stock_level,item_protection_plan, item_protection_plan_price2, item_protection_plan_price4]
     # print(data)
     return data
 
 
 def to_csv(data, name):
     headers = ["Name", "Price", "Link", "Customer Review", "Review Count", "Seller", "Specs List(If Applicable)",
-               "Item Description", "Shipping Option", "Returning Option", "Item Stock Level"]
+               "Item Description", "Shipping Option", "Returning Option", "Item Stock Level", "Protection Plan Offered", "Protection Plan Price (2 year)", "Protection Plan Price (4 year)"]
     csv_file = open("./data/ListSearch_" + name + ".csv", "w")
     writer = csv.writer(csv_file)
     writer.writerow(headers)
@@ -266,11 +287,11 @@ def main(name, page):
     data = parse_and_select(html)
     # Start individual Search
     data_s = []
-    # j = 0
+    j = 0
     for i in data:
-        #if j > 1:
-        #    break
-        #j += 1
+        if j > 1:
+           break
+        j += 1
         url = i[2]
         print(url)
         html_i = get_item_page(url)
@@ -279,7 +300,7 @@ def main(name, page):
 
     # print(data_s[0])
     return data_s
-    print("finished one page")
+    print("finished one search page")
 
 
 if __name__ == "__main__":

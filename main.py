@@ -106,12 +106,16 @@ def parse_and_select(res):
         items_with_all_data+'//span[@class="a-price"]/span[@class="a-offscreen"]/node()')
     item_url = html.xpath(
         items_with_all_data+"//a[@class='a-link-normal a-text-normal']/@href")
+    item_
     print(len(item_titles))
     print(len(item_prices))
     print(len(item_url))
+    url_processed = []
+    for i in item_url:
+        url_processed.append("www.amazon.com"+i)
     data = []
     for i in range(len(item_titles)):
-        item = [item_titles[i], item_prices[i], item_url[i]]
+        item = [item_titles[i], item_prices[i], url_processed[i]]
         data.append(item)
     return data
 

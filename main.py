@@ -200,8 +200,8 @@ def parse_and_select_item(res):
     item_first_available = html.xpath(
         '//table[@id="productDetails_detailBullets_sections1"]/tbody/tr/th[contains(string(),"Date First Available")]/../td/text()'
     )
-
-
+    data = []
+    return data
 
 
 def to_csv(data, name):

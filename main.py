@@ -215,11 +215,19 @@ def parse_and_select_item(res):
     item_protection_plan_price2 =  html.xpath(
         '//span/a[contains(string(),"2-Year")]/../span/text()'
     )
+    item_listing_price = html.xpath(
+        '//td[contains(string(),"List Price:")]/../td[position()=2]/span[contains(string(),"$")]/text()'
+    )
+    item_is_amazon_choice = html.xpath(
+        '//span[contains(string(),"Amazon\'s Choice")]'
+    )
     # print(item_specs)
     # print(item_description)
     # print(item_shipping)
     # print(item_return)
     # print(item_stock_level)
+    print(item_is_amazon_choice)
+    print(item_listing_price)
     NA = "N/A"
     if len(item_seller) == 0:
         item_seller = NA
@@ -265,13 +273,21 @@ def parse_and_select_item(res):
         item_protection_plan_price4= NA
     else:
         item_protection_plan_price4= item_protection_plan_price4[0]
-    data = [item_seller, item_specs, item_description, item_shipping, item_return, item_stock_level,item_protection_plan, item_protection_plan_price2, item_protection_plan_price4]
+    if len(item_listing_price)==0:
+        item_listing_price = NA
+    else:
+        item_listing_price = item_listing_price[0]
+    if len(item_is_amazon_choice)==0:
+        item_is_amazon_choice = False
+    else:
+        item_is_amazon_choice = True
+    data = [item_is_amazon_choice, item_seller, item_listing_price, item_specs, item_description, item_shipping, item_return, item_stock_level,item_protection_plan, item_protection_plan_price2, item_protection_plan_price4]
     # print(data)
     return data
 
 
 def to_csv(data, name):
-    headers = ["Name", "Price", "Link", "Customer Review", "Review Count", "Seller", "Specs List(If Applicable)",
+    headers = ["Name", "Price", "Link", "Customer Review", "Review Count", "Is Amazon's Choice (Recommendation)","Seller", "Original Listing Price (If Applicable)", "Specs List(If Applicable)",
                "Item Description", "Shipping Option", "Returning Option", "Item Stock Level", "Protection Plan Offered", "Protection Plan Price (2 year)", "Protection Plan Price (4 year)"]
     csv_file = open("./data/ListSearch_" + name + ".csv", "w")
     writer = csv.writer(csv_file)
@@ -304,6 +320,9 @@ def main(name, page):
 
 
 if __name__ == "__main__":
+    # url = "https://www.amazon.com/Gaming-GeForce-i7-9750H-Windows-G531GV-DB76/dp/B07S3L9LPT/ref=sr_1_2_sspa?crid=1O5WSBCSPMOBF&keywords=gaming+laptop&qid=1583961076&sprefix=gaming+lap%2Caps%2C159&sr=8-2-spons&psc=1&spLa=ZW5jcnlwdGVkUXVhbGlmaWVyPUExOFpTOTM5MDZHNlM4JmVuY3J5cHRlZElkPUEwOTYzOTcyMzFWTDE3S0VKQ0dLUiZlbmNyeXB0ZWRBZElkPUEwNTQ0OTExWEkyQ1Q4N0Y2NTJQJndpZGdldE5hbWU9c3BfYXRmJmFjdGlvbj1jbGlja1JlZGlyZWN0JmRvTm90TG9nQ2xpY2s9dHJ1ZQ=="
+    # html = get_item_page(url)
+    # parse_and_select_item(html)
     name = input("Please Input the Item You Want To Search")
     name = name.replace(" ", "+")
     page = input("Please indecate how many pages of data is needed")

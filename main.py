@@ -19,7 +19,8 @@ import time
 #             proxies.add(proxy)
 #     return proxies
 
-# test_url = "https://www.amazon.com/Apple-Watch-GPS-44mm-Aluminum/dp/B07XR5T85R/ref=sr_1_5?keywords=apple&qid=1583891902&sr=8-5"
+# test_url = "https://www.amazon.com/Apple-Watch-GPS-44mm-Aluminum/dp/B07XR5T85R/ref=sr_1_5?keywords=apple&qid
+# =1583891902&sr=8-5"
 
 # Note Used
 # user_agent_list = [
@@ -60,12 +61,15 @@ BASE_URL = "https://www.amazon.com/s?k="
 
 # 浏览器头部数据：根据真实浏览器模仿得来
 HEADER = {
-    "User-Agent": 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.157 Safari/537.36',
-    "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9",
+    "User-Agent": 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.157 '
+                  'Safari/537.36',
+    "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,"
+              "application/signed-exchange;v=b3;q=0.9",
     "accept-encoding": "gzip, deflate, br",
     "accept-language": "zh-CN,zh;q=0.9,en;q=0.8",
     "cache-control": "max-age=0",
 }
+
 
 # 给定一个物品名称（String）与搜索页面数（int），返回一个text格式的html回复
 def get_search_page(item_name, pg):
@@ -86,13 +90,15 @@ def get_search_page(item_name, pg):
             elif response.status_code == 200:
                 # print(response.text)
                 html = etree.HTML(response.text)
-                items_with_all_data = './/div[@class="sg-col-inner"]/div[2]//span[@class="a-price-whole"]/../../../../../../../../../../div[@class="sg-row"][1]//span[@aria-label][1]/../../../../../../../../..'
+                items_with_all_data = './/div[@class="sg-col-inner"]/div[2]//span[' \
+                                      '@class="a-price-whole"]/../../../../../../../../../../div[@class="sg-row"][' \
+                                      '1]//span[@aria-label][1]/../../../../../../../../.. '
                 item_titles = html.xpath(
                     items_with_all_data + '//span[@class="a-size-medium a-color-base a-text-normal"]/node()')
                 no_result = html.xpath(
                     '//span[contains(string(),"No results")]'
                 )
-                if (len(item_titles) == 0):
+                if len(item_titles) == 0:
                     # Request is blocked by bot detection
                     print('Request is blocked by bot detection')
                     continue
@@ -108,10 +114,13 @@ def get_search_page(item_name, pg):
             continue
     return None
 
+
 # 给定一个string格式的html，通过Xpath提取搜索中需要的特征
 def parse_and_select(res):
     html = etree.HTML(res)
-    items_with_all_data = './/div[@class="sg-col-inner"]/div[2]//span[@class="a-price-whole"]/../../../../../../../../../../div[@class="sg-row"][1]//span[@aria-label][1]/../../../../../../../../..'
+    items_with_all_data = './/div[@class="sg-col-inner"]/div[2]//span[' \
+                          '@class="a-price-whole"]/../../../../../../../../../../div[@class="sg-row"][1]//span[' \
+                          '@aria-label][1]/../../../../../../../../.. '
     item_titles = html.xpath(
         items_with_all_data + '//span[@class="a-size-medium a-color-base a-text-normal"]/node()')
     item_prices = html.xpath(
@@ -184,6 +193,7 @@ def get_item_page(url):
             continue
     return None
 
+
 # 与上一函数相似，通过Xpath选择商品页面上的重要信息。
 def parse_and_select_item(res):
     html = etree.HTML(res)
@@ -212,7 +222,7 @@ def parse_and_select_item(res):
     item_protection_plan_price4 = html.xpath(
         '//span/a[contains(string(),"4-Year")]/../span/text()'
     )
-    item_protection_plan_price2 =  html.xpath(
+    item_protection_plan_price2 = html.xpath(
         '//span/a[contains(string(),"2-Year")]/../span/text()'
     )
     item_listing_price = html.xpath(
@@ -261,53 +271,57 @@ def parse_and_select_item(res):
         item_stock_level = NA
     else:
         item_stock_level = item_stock_level[0].replace("\n", "")
-    if len(item_protection_plan)>0:
+    if len(item_protection_plan) > 0:
         item_protection_plan = True
     else:
         item_protection_plan = False
-    if len(item_protection_plan_price2)==0:
-        item_protection_plan_price2= NA
+    if len(item_protection_plan_price2) == 0:
+        item_protection_plan_price2 = NA
     else:
-        item_protection_plan_price2= item_protection_plan_price2[0]
-    if len(item_protection_plan_price4)==0:
-        item_protection_plan_price4= NA
+        item_protection_plan_price2 = item_protection_plan_price2[0]
+    if len(item_protection_plan_price4) == 0:
+        item_protection_plan_price4 = NA
     else:
-        item_protection_plan_price4= item_protection_plan_price4[0]
-    if len(item_listing_price)==0:
+        item_protection_plan_price4 = item_protection_plan_price4[0]
+    if len(item_listing_price) == 0:
         item_listing_price = NA
     else:
         item_listing_price = item_listing_price[0]
-    if len(item_is_amazon_choice)==0:
+    if len(item_is_amazon_choice) == 0:
         item_is_amazon_choice = False
     else:
         item_is_amazon_choice = True
-    data = [item_is_amazon_choice, item_seller, item_listing_price, item_specs, item_description, item_shipping, item_return, item_stock_level,item_protection_plan, item_protection_plan_price2, item_protection_plan_price4]
+    data = [item_is_amazon_choice, item_seller, item_listing_price, item_specs, item_description, item_shipping,
+            item_return, item_stock_level, item_protection_plan, item_protection_plan_price2,
+            item_protection_plan_price4]
     # print(data)
     return data
 
 
-def to_csv(data, name):
-    headers = ["Name", "Price", "Link", "Customer Review", "Review Count", "Is Amazon's Choice (Recommendation)","Seller", "Original Listing Price (If Applicable)", "Specs List(If Applicable)",
-               "Item Description", "Shipping Option", "Returning Option", "Item Stock Level", "Protection Plan Offered", "Protection Plan Price (2 year)", "Protection Plan Price (4 year)"]
-    csv_file = open("./data/ListSearch_" + name + ".csv", "w")
+def to_csv(fina_data, search_item_name):
+    headers = ["Name", "Price", "Link", "Customer Review", "Review Count", "Is Amazon's Choice (Recommendation)",
+               "Seller", "Original Listing Price (If Applicable)", "Specs List(If Applicable)",
+               "Item Description", "Shipping Option", "Returning Option", "Item Stock Level", "Protection Plan Offered",
+               "Protection Plan Price (2 year)", "Protection Plan Price (4 year)"]
+    csv_file = open("./data/ListSearch_" + search_item_name + ".csv", "w")
     writer = csv.writer(csv_file)
     writer.writerow(headers)
-    for i in data:
+    for i in fina_data:
         writer.writerow(i)
     csv_file.close()
     return
 
 
-def main(name, page):
-    html = get_search_page(name, page)
-    data = parse_and_select(html)
+def main(item, page_count):
+    html = get_search_page(item, page_count)
+    query_data = parse_and_select(html)
     # Start individual Search
     data_s = []
-    j = 0
-    for i in data:
-        if j > 1:
-           break
-        j += 1
+    # j = 0
+    for i in query_data:
+        # if j > 1:
+        #    break
+        # j += 1
         url = i[2]
         print(url)
         html_i = get_item_page(url)
@@ -320,15 +334,17 @@ def main(name, page):
 
 
 if __name__ == "__main__":
-    # url = "https://www.amazon.com/Gaming-GeForce-i7-9750H-Windows-G531GV-DB76/dp/B07S3L9LPT/ref=sr_1_2_sspa?crid=1O5WSBCSPMOBF&keywords=gaming+laptop&qid=1583961076&sprefix=gaming+lap%2Caps%2C159&sr=8-2-spons&psc=1&spLa=ZW5jcnlwdGVkUXVhbGlmaWVyPUExOFpTOTM5MDZHNlM4JmVuY3J5cHRlZElkPUEwOTYzOTcyMzFWTDE3S0VKQ0dLUiZlbmNyeXB0ZWRBZElkPUEwNTQ0OTExWEkyQ1Q4N0Y2NTJQJndpZGdldE5hbWU9c3BfYXRmJmFjdGlvbj1jbGlja1JlZGlyZWN0JmRvTm90TG9nQ2xpY2s9dHJ1ZQ=="
-    # html = get_item_page(url)
-    # parse_and_select_item(html)
+    # url = "https://www.amazon.com/Gaming-GeForce-i7-9750H-Windows-G531GV-DB76/dp/B07S3L9LPT/ref=sr_1_2_sspa?crid
+    # =1O5WSBCSPMOBF&keywords=gaming+laptop&qid=1583961076&sprefix=gaming+lap%2Caps%2C159&sr=8-2-spons&psc=1&spLa
+    # =ZW5jcnlwdGVkUXVhbGlmaWVyPUExOFpTOTM5MDZHNlM4JmVuY3J5cHRlZElkPUEwOTYzOTcyMzFWTDE3S0VKQ0dLUiZlbmNyeXB0ZWRBZElkPUEw
+    # NTQ0OTExWEkyQ1Q4N0Y2NTJQJndpZGdldE5hbWU9c3BfYXRmJmFjdGlvbj1jbGlja1JlZGlyZWN0JmRvTm90TG9nQ2xpY2s9dHJ1ZQ=="
+    # html = get_item_page(url) parse_and_select_item(html)
     name = input("Please Input the Item You Want To Search")
     name = name.replace(" ", "+")
     page = input("Please indecate how many pages of data is needed")
     try:
         page_c = int(page)
-        if (page_c >= 20):
+        if page_c >= 20:
             print("TooLarge page number input")
     except:
         print("invalid page number input")
@@ -339,7 +355,7 @@ if __name__ == "__main__":
     print("Search started")
     i = 1
     data = []
-    while (page_c > 0):
+    while page_c > 0:
         print("Working on " + str(i) + "'s search, " + str(page) + " search left.")
         data_si = main(name, i)
         data = data + data_si

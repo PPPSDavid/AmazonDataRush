@@ -97,31 +97,46 @@ def get_search_page(item_name, pg):
 
 def parse_and_select(res):
     html = etree.HTML(res)
-    items_with_all_data = './/div[@class="sg-col-inner"]/div[2]//span[@class="a-price-whole"]/../../../../../../../../../..'
-    title = items_with_all_data+'//span[@class="a-size-medium a-color-base a-text-normal"]/node()'
-    print(title)
+    items_with_all_data = './/div[@class="sg-col-inner"]/div[2]//span[@class="a-price-whole"]/../../../../../../../../../../div[@class="sg-row"][1]//span[@aria-label][1]/../../../../../../../../..'
     item_titles = html.xpath(
         items_with_all_data+'//span[@class="a-size-medium a-color-base a-text-normal"]/node()')
     item_prices = html.xpath(
         items_with_all_data+'//span[@class="a-price"]/span[@class="a-offscreen"]/node()')
     item_url = html.xpath(
         items_with_all_data+"//a[@class='a-link-normal a-text-normal']/@href")
-    item_
+    item_review = html.xpath(
+        items_with_all_data+'//div[@class="sg-row"][1]//span[@aria-label][1]/@aria-label'
+    )
+    item_review_count = html.xpath(
+        items_with_all_data+'//div[@class="sg-row"][1]//span[@aria-label][2]/@aria-label'
+    )
     print(len(item_titles))
     print(len(item_prices))
     print(len(item_url))
+    print(len(item_review))
+    print(len(item_review_count))
     url_processed = []
     for i in item_url:
         url_processed.append("www.amazon.com"+i)
+
+    review_processed = []
+    for i in item_review:
+        number = i[0:3]
+        review_processed.append(float(number))
+
+    review_count_processed = []
+    for i in item_review_count:
+        review_count_processed.append(int(i.replace(',', '')))
+
     data = []
     for i in range(len(item_titles)):
-        item = [item_titles[i], item_prices[i], url_processed[i]]
+        item = [item_titles[i], item_prices[i], url_processed[i],review_processed[i], review_count_processed[i]]
         data.append(item)
     return data
 
 
 def to_csv(data,name):
-    headers = ["Name", "Price", "Link"]
+    headers = ["Name", "Price", "Link", "Customer Review", "Review Count"]
     csv_file = open("./data/ListSearch_"+name+".csv", "w")
     writer = csv.writer(csv_file)
     writer.writerow(headers)

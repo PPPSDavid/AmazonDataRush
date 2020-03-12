@@ -356,7 +356,7 @@ if __name__ == "__main__":
     i = 1
     data = []
     while page_c > 0:
-        print("Working on " + str(i) + "'s search, " + str(page) + " search left.")
+        print("Working on " + str(i) + "'s search, " + str(page_c) + " search left.")
         data_si = main(name, i)
         data = data + data_si
         page_c -= 1

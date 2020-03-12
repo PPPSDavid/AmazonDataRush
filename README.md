@@ -42,6 +42,7 @@
 - 搜索内容： "Gaming Laptop"
 - 搜索页面数量： "5"
 
+测试过的其他搜索："phone"，"Apple"， "graphics card"
 ## 所用库列表
 1. lxml
 2. requests

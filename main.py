@@ -5,9 +5,8 @@ import csv
 import random
 import time
 
+# 以下代码用于反反扒虫措施，因更简洁方法即可完成类似效果故未被使用
 # from itertools import cycle
-
-# Not Used
 # def get_proxies():
 #     url = 'https://free-proxy-list.net/'
 #     response = requests.get(url)
@@ -18,11 +17,8 @@ import time
 #             proxy = ":".join([i.xpath('.//td[1]/text()')[0], i.xpath('.//td[2]/text()')[0]])
 #             proxies.add(proxy)
 #     return proxies
-
 # test_url = "https://www.amazon.com/Apple-Watch-GPS-44mm-Aluminum/dp/B07XR5T85R/ref=sr_1_5?keywords=apple&qid
 # =1583891902&sr=8-5"
-
-# Note Used
 # user_agent_list = [
 #    #Chrome
 #     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.113 Safari/537.36',
@@ -50,8 +46,6 @@ import time
 #     'Mozilla/5.0 (compatible; MSIE 10.0; Windows NT 6.1; Trident/6.0)',
 #     'Mozilla/4.0 (compatible; MSIE 8.0; Windows NT 5.1; Trident/4.0; .NET CLR 2.0.50727; .NET CLR 3.0.4506.2152; .NET CLR 3.5.30729)'
 # ]
-
-# Not used
 # proxy_pool = cycle(get_proxies())
 
 # 以上全部为对于亚马逊反机器人指令的对应，因并未被过多侦测故未实际采用
@@ -71,24 +65,23 @@ HEADER = {
 }
 
 
-# 给定一个物品名称（String）与搜索页面数（int），返回一个text格式的html回复
+# 给定一个物品名称（String）与搜索页面数（int），返回一个来自Amazon的text格式的html回复
 def get_search_page(item_name, pg):
     target = BASE_URL + item_name + "&page=" + str(pg)
     print(target)
     for i in range(100):
         try:
             print("Request #%d" % i)
-            time.sleep(random.randint(1, 3))
-            # proxy = next(proxy_pool)
+            time.sleep(random.randint(1, 3))  # 减慢程序执行防止反扒虫介入
+            # proxy = next(proxy_pool) 未被采用
             response = requests.get(
                 target, headers=HEADER)
             if response.status_code != 200:
-                # print("Error!")
                 # Request is not successfully handled
                 print('Request is not successfully handled')
                 continue
             elif response.status_code == 200:
-                # print(response.text)
+                # Request is handled
                 html = etree.HTML(response.text)
                 items_with_all_data = './/div[@class="sg-col-inner"]/div[2]//span[' \
                                       '@class="a-price-whole"]/../../../../../../../../../../div[@class="sg-row"][' \
@@ -115,7 +108,7 @@ def get_search_page(item_name, pg):
     return None
 
 
-# 给定一个string格式的html，通过Xpath提取搜索中需要的特征
+# 给定一个string格式的html，通过Xpath提取搜索中需要的特征，返回一个每行代表一个商品的二维数组
 def parse_and_select(res):
     html = etree.HTML(res)
     items_with_all_data = './/div[@class="sg-col-inner"]/div[2]//span[' \
@@ -133,11 +126,8 @@ def parse_and_select(res):
     item_review_count = html.xpath(
         items_with_all_data + '//div[@class="sg-row"][1]//span[@aria-label][2]/@aria-label'
     )
-    # print(len(item_titles))
-    # print(len(item_prices))
-    # print(len(item_url))
-    # print(len(item_review))
-    # print(len(item_review_count))
+
+    # Data cleaning
     url_processed = []
     for i in item_url:
         url_processed.append("https://www.amazon.com" + i)
@@ -154,6 +144,7 @@ def parse_and_select(res):
     for i in item_review_count:
         review_count_processed.append(int(i.replace(',', '')))
 
+    # Data Summation
     data = []
     for i in range(len(item_titles)):
         item = [item_titles[i], item_prices[i], url_processed[i], review_processed[i], review_count_processed[i]]
@@ -161,7 +152,6 @@ def parse_and_select(res):
     return data
 
 
-# Attempt two: loop through item pages for specific information.
 # 给定一个特定商品的url，返回一个text格式的服务器返回html
 def get_item_page(url):
     for i in range(100):
@@ -171,12 +161,11 @@ def get_item_page(url):
             response = requests.get(
                 url, headers=HEADER)
             if response.status_code != 200:
-                # print("Error!")
                 # Request is not successfully handled
                 print('Request is not successfully handled')
                 continue
             elif response.status_code == 200:
-                # print(response.text)
+                # Request is handled
                 html = etree.HTML(response.text)
                 item_titles = html.xpath(
                     '// div[ @ id = "centerCol"]'
@@ -194,7 +183,7 @@ def get_item_page(url):
     return None
 
 
-# 与上一函数相似，通过Xpath选择商品页面上的重要信息。
+# 与上一同类函数相似，通过Xpath选择txt格式商品页面html上的重要信息，返回一个单行的代表所有数据的数组
 def parse_and_select_item(res):
     html = etree.HTML(res)
     item_seller = html.xpath(
@@ -231,14 +220,9 @@ def parse_and_select_item(res):
     item_is_amazon_choice = html.xpath(
         '//span[contains(string(),"Amazon\'s Choice")]'
     )
-    # print(item_specs)
-    # print(item_description)
-    # print(item_shipping)
-    # print(item_return)
-    # print(item_stock_level)
-    print(item_is_amazon_choice)
-    print(item_listing_price)
     NA = "N/A"
+
+    # Data cleaning
     if len(item_seller) == 0:
         item_seller = NA
     else:
@@ -291,27 +275,30 @@ def parse_and_select_item(res):
         item_is_amazon_choice = False
     else:
         item_is_amazon_choice = True
+
+    # Data summation
     data = [item_is_amazon_choice, item_seller, item_listing_price, item_specs, item_description, item_shipping,
             item_return, item_stock_level, item_protection_plan, item_protection_plan_price2,
             item_protection_plan_price4]
-    # print(data)
     return data
 
 
-def to_csv(fina_data, search_item_name):
+# 将数据集二维数组按照给定的列数存储为csv文件
+def to_csv(final_data, search_item_name):
     headers = ["Name", "Price", "Link", "Customer Review", "Review Count", "Is Amazon's Choice (Recommendation)",
                "Seller", "Original Listing Price (If Applicable)", "Specs List(If Applicable)",
                "Item Description", "Shipping Option", "Returning Option", "Item Stock Level", "Protection Plan Offered",
-               "Protection Plan Price (2 year)", "Protection Plan Price (4 year)"]
-    csv_file = open("./data/ListSearch_" + search_item_name + ".csv", "w")
+               "Protection Plan Price (2 year)", "Protection Plan Price (4 year)"]  # 涵盖的数据列名称
+    csv_file = open("./data/ListSearch_" + search_item_name + ".csv", "w")  # 输出csv名称与设置
     writer = csv.writer(csv_file)
     writer.writerow(headers)
-    for i in fina_data:
+    for i in final_data:
         writer.writerow(i)
     csv_file.close()
     return
 
 
+# 主程序，通过搜索页搜索与单项搜索结合返回给定商品名称在亚马逊给定搜索页数上的所有信息，返回格式为二维数组
 def main(item, page_count):
     html = get_search_page(item, page_count)
     query_data = parse_and_select(html)
@@ -339,9 +326,11 @@ if __name__ == "__main__":
     # =ZW5jcnlwdGVkUXVhbGlmaWVyPUExOFpTOTM5MDZHNlM4JmVuY3J5cHRlZElkPUEwOTYzOTcyMzFWTDE3S0VKQ0dLUiZlbmNyeXB0ZWRBZElkPUEw
     # NTQ0OTExWEkyQ1Q4N0Y2NTJQJndpZGdldE5hbWU9c3BfYXRmJmFjdGlvbj1jbGlja1JlZGlyZWN0JmRvTm90TG9nQ2xpY2s9dHJ1ZQ=="
     # html = get_item_page(url) parse_and_select_item(html)
+
+    # 用户输入参数
     name = input("Please Input the Item You Want To Search")
     name = name.replace(" ", "+")
-    page = input("Please indecate how many pages of data is needed")
+    page = input("Please indicate how many pages of data is needed")
     try:
         page_c = int(page)
         if page_c >= 20:
@@ -349,10 +338,14 @@ if __name__ == "__main__":
     except:
         print("invalid page number input")
         raise KeyboardInterrupt
+
+    # 返回开始确认信息
     print("Your search subject is " + name)
     print("You want to search for " + page + " times")
     input("Press enter to start the search")
     print("Search started")
+
+    # 开始进行逐页遍历，并显示进度
     i = 1
     data = []
     while page_c > 0:
@@ -361,5 +354,9 @@ if __name__ == "__main__":
         data = data + data_si
         page_c -= 1
         i += 1
+
+    # 将最终结果存入csv
     to_csv(data, name)
+
+    # 显示最终确认信息
     print("All search finished and stored")
